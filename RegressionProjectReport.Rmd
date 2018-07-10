@@ -1,0 +1,95 @@
+---
+title: "RegressionProject"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Regression Models Final Project - Motor Trend
+### Alex C. Fleming - JHU Data Science Student
+
+#### Executive Summary
+This is the final project for the Regression Models Course in Coursera JHU Data Science Specialization. The purpose of this is to use a dataset about cars from Motor Trend Magazine to address the following questions:
+
+- Is an automatic or manual transmission better for MPG?
+- Quantify the MPG difference between automatic and manual transmissions
+
+The overall answer to these questions are:
+
+- Yes, automatic cars get better fuel efficiency expressed as MPG, but the best other predictors include the number of engine cylinders, vehicle weight, and engine horsepower.
+- The impact of automatic cars on MPG is the coefficient 1.80921, which means that there is an improvement of about 1.8 mpg shifting to automatic from manual. 
+
+#### Initial Regression Exploration
+
+The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).
+
+First, we load, make factors of engine and transmission elements, and order certain factors to help with summarization.
+
+```{r setup}
+data(mtcars)
+library(data.table)
+library(ggplot2)
+library(MASS)
+data <- data.table(mtcars)
+data$vs <- factor(data$vs, labels = c("V", "S"))
+data$am <- factor(data$am, labels = c("automatic", "manual"))
+data$cyl  <- ordered(data$cyl)
+data$gear  <- ordered(data$gear)
+data$carb  <- ordered(data$carb)
+summary(data)
+```
+
+We begin with some basic exploration based on hypotheses. An initial idea might be that the number of cylinders combined with the transmission type can explain the difference in fuel efficiency. We attempt this model first.
+
+```{r explore}
+fit1 <- lm(mpg ~ am + cyl, data=data)
+summary(fit1)
+par(mfrow = c(2,2))
+plot(fit1)
+```
+
+This shows that the two chosen variables have an adjusted R-squared of .73, so they explain 73% of the variance in the model, which is actually fairly good as a start, but needs to be compared. The F-statistic and p-value show that we can reject the null hypothesis that these variables are not significant. We want to compare this to the regression with all other variables.
+
+```{r explore2}
+fit2 <- lm(mpg ~ ., data=data)
+summary(fit2)
+anova(fit1, fit2)
+```
+This fit has raised the R-squared values, but that will happen as you add predictors, it does not necessarily mean that the fit has improved. The p-value has become much higher and the significance of individual predictors has become less clear. We need to try a method to attempt multiple different models to get the optimal set of predictors between 2 and all possible. We do have indication that there is some absolute quality value to these models.
+
+#### Adjustments using Step AIC
+
+The stepAIC funtion uses Akaike information criterion (AIC) aA an estimator of the relative quality of statistical models for a given set of data. Given a collection of models for the data, AIC estimates the quality of each model, relative to each of the other models.
+
+```{r analysis}
+step <- stepAIC(fit2, direction="both")
+step$anova
+```
+Initial Model:
+mpg ~ cyl + disp + hp + drat + wt + qsec + vs + am + gear + carb
+Final Model:
+mpg ~ cyl + hp + wt + am
+
+This includes the initial variables from our analysis, plus horsepower and weight of the vehicle, which intuitively make sense as an expression of fuel efficiency.
+
+#### Final Regression
+
+```{r final}
+fit3 <- lm(mpg ~ cyl + hp + wt + am, data=data)
+summary(fit3)
+par(mfrow = c(2,2))
+plot(fit3)
+```
+#### Description and Output
+
+This final model shows a significant rejection of the null, as well as and improved adjusted R-squard of .84, as well as meaningful significance in the individual variables. The specific impact of automatic vs. manual is the coefficient 1.80921, which means that there is an improvement of about 2 mpg shifting to automatic from manual. 
+
+The plotted residuals appear pretty randomly around the centerline, and the normality plot does not show any signs of non-normality, outliers, or unidentified variables. So, this seems to be a good final model.
+
+#### Concluding Remarks
+
+There are many different ways to approach model selection, but this one rapidly allowed us to arrive at the 4 predictors that seem to produce an optimal model. We are reliant on the quality of the input data.
+
+Contact: Alex C. Fleming, mailto:alex.c.fleming@gmail.com

@@ -1,6 +1,8 @@
 ---
 title: "RegressionProject"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -18,8 +20,8 @@ This is the final project for the Regression Models Course in Coursera JHU Data 
 
 The overall answer to these questions are:
 
-- Yes, automatic cars get better fuel efficiency expressed as MPG, but the best other predictors include the number of engine cylinders, vehicle weight, and engine horsepower.
-- The impact of automatic cars on MPG is the coefficient 1.80921, which means that there is an improvement of about 1.8 mpg shifting to automatic from manual. 
+- Yes, manual cars get better fuel efficiency expressed as MPG, but the best other predictors include the number of engine cylinders, vehicle weight, and engine horsepower.
+- The impact of manual cars on MPG is the coefficient 1.80921, which means that there is an improvement of about 1.8 mpg shifting to manual from automatic. 
 
 #### Initial Regression Exploration
 
@@ -27,7 +29,7 @@ The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel
 
 First, we load, make factors of engine and transmission elements, and order certain factors to help with summarization.
 
-```{r setup}
+```{r dataprep}
 data(mtcars)
 library(data.table)
 library(ggplot2)
@@ -41,13 +43,12 @@ data$carb  <- ordered(data$carb)
 summary(data)
 ```
 
-We begin with some basic exploration based on hypotheses. An initial idea might be that the number of cylinders combined with the transmission type can explain the difference in fuel efficiency. We attempt this model first.
+We begin with some basic exploration based on hypotheses. A t-test shows that there is a material difference between automatic and manual groups. An initial idea might be that the number of cylinders combined with the transmission type can explain the difference in fuel efficiency. We attempt this model first.
 
 ```{r explore}
+t.test(data$mpg~data$am)
 fit1 <- lm(mpg ~ am + cyl, data=data)
 summary(fit1)
-par(mfrow = c(2,2))
-plot(fit1)
 ```
 
 This shows that the two chosen variables have an adjusted R-squared of .73, so they explain 73% of the variance in the model, which is actually fairly good as a start, but needs to be compared. The F-statistic and p-value show that we can reject the null hypothesis that these variables are not significant. We want to compare this to the regression with all other variables.
@@ -55,18 +56,22 @@ This shows that the two chosen variables have an adjusted R-squared of .73, so t
 ```{r explore2}
 fit2 <- lm(mpg ~ ., data=data)
 summary(fit2)
-anova(fit1, fit2)
 ```
+
 This fit has raised the R-squared values, but that will happen as you add predictors, it does not necessarily mean that the fit has improved. The p-value has become much higher and the significance of individual predictors has become less clear. We need to try a method to attempt multiple different models to get the optimal set of predictors between 2 and all possible. We do have indication that there is some absolute quality value to these models.
 
 #### Adjustments using Step AIC
 
 The stepAIC funtion uses Akaike information criterion (AIC) aA an estimator of the relative quality of statistical models for a given set of data. Given a collection of models for the data, AIC estimates the quality of each model, relative to each of the other models.
 
-```{r analysis}
+```{r analysis, results="hide"}
 step <- stepAIC(fit2, direction="both")
+```
+
+```{r anova}
 step$anova
 ```
+
 Initial Model:
 mpg ~ cyl + disp + hp + drat + wt + qsec + vs + am + gear + carb
 Final Model:
@@ -84,7 +89,7 @@ plot(fit3)
 ```
 #### Description and Output
 
-This final model shows a significant rejection of the null, as well as and improved adjusted R-squard of .84, as well as meaningful significance in the individual variables. The specific impact of automatic vs. manual is the coefficient 1.80921, which means that there is an improvement of about 2 mpg shifting to automatic from manual. 
+This final model shows a significant rejection of the null, as well as and improved adjusted R-squard of .84, as well as meaningful significance in the individual variables. The specific impact of automatic vs. manual is the coefficient 1.80921, which means that there is an improvement of about 2 mpg improvement shifting to manual from automatic. 
 
 The plotted residuals appear pretty randomly around the centerline, and the normality plot does not show any signs of non-normality, outliers, or unidentified variables. So, this seems to be a good final model.
 
